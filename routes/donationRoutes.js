@@ -4,23 +4,15 @@ const {
   createDonation,
   getDonations,
   getDonation,
-  getDonationsByCategory,
-  getTotalDonations
+  updateDonationStatus
 } = require('../controllers/donationController');
 
-// POST /api/donations - Create a new donation
+// Public routes
 router.post('/', createDonation);
-
-// GET /api/donations - Get all donations
-router.get('/', getDonations);
-
-// GET /api/donations/total - Get total donations amount
-router.get('/total', getTotalDonations);
-
-// GET /api/donations/category/:category - Get donations by category
-router.get('/category/:category', getDonationsByCategory);
-
-// GET /api/donations/:id - Get single donation
 router.get('/:id', getDonation);
+
+// Protected routes (only accessible by admin)
+router.get('/', getDonations);
+router.patch('/:id/status', updateDonationStatus);
 
 module.exports = router;

@@ -1,19 +1,73 @@
-const Donation = require('../models/donation');
-
-// Create a new donation
 exports.createDonation = async (req, res) => {
   try {
-    const donation = new Donation(req.body);
-    await donation.save();
+    const donationData = {
+      donor: {
+        name: req.body.donor.name,
+        email: req.body.donor.email,
+        phone: req.body.donor.phone,
+        address: req.body.donor.address
+      },
+      amount: Number(req.body.amount),
+      purpose: req.body.purpose,
+      paymentMethod: req.body.paymentMethod,
+      notes: req.body.notes
+    };
+
+    // Validate amount
+    if (isNaN(donationData.amount) || donationData.amount <= 0) {
+      throw new Error('Please provide a valid donation amount');
+    }
+
+    const donation = await Donation.create(donationData);
+    
     res.status(201).json({
       success: true,
       data: donation,
-      message: 'Donation created successfully'
+      message: 'Donation submitted successfully'
     });
   } catch (error) {
+    console.error('Donation creation error:', error);
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message || 'Failed to create donation'
+    });
+  }
+};
+const Donation = require('../models/donation');
+
+// Create new donation
+exports.createDonation = async (req, res) => {
+  try {
+    const donationData = {
+      donor: {
+        name: req.body.donor.name,
+        email: req.body.donor.email,
+        phone: req.body.donor.phone,
+        address: req.body.donor.address
+      },
+      amount: Number(req.body.amount),
+      purpose: req.body.purpose,
+      paymentMethod: req.body.paymentMethod,
+      notes: req.body.notes
+    };
+
+    // Validate amount
+    if (isNaN(donationData.amount) || donationData.amount <= 0) {
+      throw new Error('Please provide a valid donation amount');
+    }
+
+    const donation = await Donation.create(donationData);
+    
+    res.status(201).json({
+      success: true,
+      data: donation,
+      message: 'Donation submitted successfully'
+    });
+  } catch (error) {
+    console.error('Donation creation error:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to create donation'
     });
   }
 };
@@ -21,7 +75,10 @@ exports.createDonation = async (req, res) => {
 // Get all donations
 exports.getDonations = async (req, res) => {
   try {
-    const donations = await Donation.find().sort({ timestamp: -1 });
+    const donations = await Donation.find()
+      .sort({ createdAt: -1 })
+      .select('-__v');
+
     res.status(200).json({
       success: true,
       count: donations.length,
@@ -35,16 +92,18 @@ exports.getDonations = async (req, res) => {
   }
 };
 
-// Get single donation by ID
+// Get single donation
 exports.getDonation = async (req, res) => {
   try {
     const donation = await Donation.findById(req.params.id);
+    
     if (!donation) {
       return res.status(404).json({
         success: false,
         message: 'Donation not found'
       });
     }
+
     res.status(200).json({
       success: true,
       data: donation
@@ -57,45 +116,25 @@ exports.getDonation = async (req, res) => {
   }
 };
 
-// Get donations by category
-exports.getDonationsByCategory = async (req, res) => {
+// Update donation status
+exports.updateDonationStatus = async (req, res) => {
   try {
-    const donations = await Donation.find({ 
-      causeCategory: req.params.category 
-    }).sort({ timestamp: -1 });
-    
-    res.status(200).json({
-      success: true,
-      count: donations.length,
-      data: donations
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
+    const donation = await Donation.findByIdAndUpdate(
+      req.params.id,
+      { status: req.body.status },
+      { new: true, runValidators: true }
+    );
 
-// Get total donations amount
-exports.getTotalDonations = async (req, res) => {
-  try {
-    const result = await Donation.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalAmount: { $sum: "$amount" },
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-    
+    if (!donation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Donation not found'
+      });
+    }
+
     res.status(200).json({
       success: true,
-      data: {
-        totalAmount: result[0]?.totalAmount || 0,
-        count: result[0]?.count || 0
-      }
+      data: donation
     });
   } catch (error) {
     res.status(500).json({
