@@ -25,10 +25,33 @@ const donationSchema = new mongoose.Schema({
   message: {
     type: String
   },
+  status: {
+    type: String,
+    enum: ['pending', 'completed', 'failed'],
+    default: 'pending'
+  },
+  transactionId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  receiptNumber: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  anonymous: {
+    type: Boolean,
+    default: false
+  },
   timestamp: {
     type: Date,
     default: Date.now
   }
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 module.exports = mongoose.model('Donation', donationSchema);
